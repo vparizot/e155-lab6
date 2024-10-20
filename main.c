@@ -24,6 +24,11 @@ char* ledStr = "<p>LED Control:</p><form action=\"ledon\"><input type=\"submit\"
 	<form action=\"ledoff\"><input type=\"submit\" value=\"Turn the LED off!\"></form>";
 char* webpageEnd   = "</body></html>";
 
+int br = 0b010; 
+int cpol = 0;
+int cpha = 0;
+
+
 //determines whether a given character sequence is in a char array request, returning 1 if present, -1 if not present
 int inString(char request[], char des[]) {
 	if (strstr(request, des) != NULL) {return 1;}
@@ -58,7 +63,7 @@ int main(void) {
   gpioEnable(GPIO_PORT_B);
   gpioEnable(GPIO_PORT_C);
 
-  pinMode(PB3, GPIO_OUTPUT);
+  //pinMode(PB3, GPIO_OUTPUT);
   
   RCC->APB2ENR |= (RCC_APB2ENR_TIM15EN);
   initTIM(TIM15);
@@ -66,6 +71,15 @@ int main(void) {
   USART_TypeDef * USART = initUSART(USART1_ID, 125000);
 
   // TODO: Add SPI initialization code
+  // 1. write proper GPIO registers: configure GPIO for MOSI, MISO, CLK
+  //MISO = PA6, MOSI = PB5, CLK = PB3 (see datasheet pg. 263)
+  pinMode(PA6, GPIO_ALT); 
+  pinMode(PB5, GPIO_ALT);
+  pinMode(PB3, GPIO_ALT);
+  initSPI(br, cpol, cpha); // call SPI initialization
+  //while loop to check buffer (DR)
+
+  
 
   while(1) {
     /* Wait for ESP8266 to send a request.
@@ -85,9 +99,12 @@ int main(void) {
     }
 
     // TODO: Add SPI code here for reading temperature
-  
+   
+
+
+    ///////////////////////////////////////////////////////////////
     // Update string with current LED state
-  
+ 
     int led_status = updateLEDStatus(request);
 
     char ledStatusStr[20];
@@ -102,11 +119,9 @@ int main(void) {
 
     sendString(USART, "<h2>LED Status</h2>");
 
-
     sendString(USART, "<p>");
     sendString(USART, ledStatusStr);
     sendString(USART, "</p>");
-
   
     sendString(USART, webpageEnd);
   }
