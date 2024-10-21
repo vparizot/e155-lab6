@@ -20,51 +20,60 @@ void initSPI(int br, int cpol, int cpha){
 // frf to motorola
 // not using crc
 
+RCC->APB2ENR |= RCC_APB2ENR_SPIEN; // enable SPI
 
 // 2. write to SPI_CR1 register
 // 2a. config serial clk baud rate w/ BR[2:0] bits
-SPI1->CR1 |= _VAL2FLD(CR1_BR, br);
+SPI1->CR1 |= _VAL2FLD(SPI_CR1_BR, br);
 
 // 2b. config CPOL & CPHA bits to define one of the four relationships between data transfer and serial clk
-SPI1->CR1 |= _VAL2FLD(CR1_CPOL, cpol);
-SPI1->CR1 |= _VAL2FLD(CR1_CPOL, cpha);
+SPI1->CR1 |= _VAL2FLD(SPI_CR1_CPOL, cpol);
+SPI1->CR1 |= _VAL2FLD(SPI_CR1_CPHA, cpha);
 
 // 2c. Select simplex or half-duplex mode by configuring RXONLY or BIDIMODE and BIDIOE (RXONLY and BIDIMODE can't be set at the same time).
-SPI1->CR1 |= _VAL2FLD(RXONLY, 0); // 0 is transmit & recieve
+//SPI1->CR1 |= _VAL2FLD(RXONLY, 0); // 0 is transmit & recieve
 
 // 2d. Configure the LSBFIRST bit to define the frame format (Note: 2)
-SPI1->CR1 |= _VAL2FLD(LSBFIRST, 1); // data transmitted & recieved with LSB
+SPI1->CR1 |= _VAL2FLD(SPI_CR1_LSBFIRST, 0b0); // data transmitted & recieved with MSB
 
 // 2e. Configure the CRCL and CRCEN bits if CRC is needed (while SCK clock signal is at idle state).
 // NO NEED FOR CRC
+SPI1->CR1 |= _VAL2FLD(SPI_CR1_CRCEN, 0b0);
 
 // 2f. Configure SSM and SSI (Notes: 2 & 3).
-SPI1->CR1 |= _VAL2FLD(SSM, 1); //enabled (we r the software)
-//SPI1->CR1 |= _VAL2FLD(SSI, 1);
+SPI1->CR1 |= _VAL2FLD(SPI_CR1_SSM, 0b1); //enabled (we r the software)
+//SPI1->CR1 |= _VAL2FLD(SPI_CR1_SSI, 0b1);
 
 // 2g. Configure the MSTR bit (in multimaster NSS configuration, avoid conflict state on NSS if master is configured to prevent MODF error).
-SPI1->CR1 |= _VAL2FLD(MSTR, 1);  
+SPI1->CR1 |= _VAL2FLD(SPI_CR1_MSTR, 0b1);  
 
 // 3. Write to SPI_CR2 register:
 // 3a. Configure the DS[3:0] bits to select the data length for the transfer.
-SPI1->CR2 |= _VAL2FLD(DS, 0b0101);
+SPI1->CR2 |= _VAL2FLD(SPI_CR2_DS, 0b1);
+SPI1->CR2 |= (0b0111 << SPI_CR2_DS_Pos)
+
+
 
 // 3b. Configure SSOE (Notes: 1 & 2 & 3).
-SPI1->CR2 |= _VAL2FLD(SSOE, 1);
+SPI1->CR2 |= _VAL2FLD(SPI_CR2_SSOE, 0b1);
 
 // 3c. Set the FRF bit if the TI protocol is required (keep NSSP bit cleared in TI mode).
-SPI1->CR2 |= _VAL2FLD(FRF, 0); //motorola mode
+SPI1->CR2 |= _VAL2FLD(SPI_CR2_FRF, 0b0); //motorola mode
 
 // 3d. Set the NSSP bit if the NSS pulse mode between two data units is required (keep CHPA and TI bits cleared in NSSP mode).
 // NO NEED FOR PULE MODE
 
 // 3e. Configure the FRXTH bit. The RXFIFO threshold must be aligned to the read access size for the SPIx_DR register.
-SPI1->CR2 |= _VAL2FLD(FRXTH, 1); //equal to 8 bit
+SPI1->CR2 |= _VAL2FLD(SPI_CR2_FRXTH, 0b1); //equal to 8 bit
+
+SPI1->CR1 |= SPI_CR1_SPE // enable spi
+// set word size to 8
+
 
 // 3f. Initialize LDMA_TX and LDMA_RX bits if DMA is used in packed mode.
 // 0 is even, 1 is odd
-SPI1->CR2 |= _VAL2FLD(LDMA_RX, 0); // Enable DMA Rx buffer in RXDMAEN bit SPI_CR2 register
-SPI1->CR2 |= _VAL2FLD(LDMA_TX, 0);
+//SPI1->CR2 |= _VAL2FLD(SPI_CR2_LDMA_RX, 0b0); // Enable DMA Rx buffer in RXDMAEN bit SPI_CR2 register
+//SPI1->CR2 |= _VAL2FLD(SPI_CR2_LDMA_TX, 0b0);
 
 //Questions: de we need to set SPE? (spi enable)
 }
@@ -78,15 +87,13 @@ char spiSendReceive(char send){
   // DMA requeste when TXE or RNXE enable bits in the SPIx_CR2 register is set (pg 1317)
   while (SPI1_SR_TXE)){ // TXE event for write access, DMA writes to SPIx_DR register
     //uint8_t *DRptr = &(SPI1->DR) 
-    char *DR2ptr =  &(SPI1->DR); // create 8 bit pointer for data register (orig. 16bits)
+    volatile char *DR2ptr =  &(SPI1->DR); // create 8 bit pointer for data register (orig. 16bits)
     *DR2ptr = send;
   }
 
    while (SPI_SR_RXNE){ //RXNE event triggered when data stored in RXFIFO, DMA reads PIx_DR register
       return DR;
-
-
     }
-   return (SPI
+   return (SPI)
 }
 

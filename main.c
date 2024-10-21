@@ -77,6 +77,7 @@ int main(void) {
   pinMode(PB5, GPIO_ALT);
   pinMode(PB3, GPIO_ALT);
   initSPI(br, cpol, cpha); // call SPI initialization
+  // choose a chip select
   //while loop to check buffer (DR)
 
   
