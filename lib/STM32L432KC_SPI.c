@@ -69,7 +69,6 @@ SPI1->CR2 |= _VAL2FLD(SPI_CR2_FRXTH, 0b1); //equal to 8 bit
 SPI1->CR1 |= SPI_CR1_SPE // enable spi
 // set word size to 8
 
-
 // 3f. Initialize LDMA_TX and LDMA_RX bits if DMA is used in packed mode.
 // 0 is even, 1 is odd
 //SPI1->CR2 |= _VAL2FLD(SPI_CR2_LDMA_RX, 0b0); // Enable DMA Rx buffer in RXDMAEN bit SPI_CR2 register
@@ -85,15 +84,20 @@ SPI1->CR1 |= SPI_CR1_SPE // enable spi
  *    -- return: the character received over SPI */
 char spiSendReceive(char send){
   // DMA requeste when TXE or RNXE enable bits in the SPIx_CR2 register is set (pg 1317)
-  while (SPI1_SR_TXE)){ // TXE event for write access, DMA writes to SPIx_DR register
-    //uint8_t *DRptr = &(SPI1->DR) 
-    volatile char *DR2ptr =  &(SPI1->DR); // create 8 bit pointer for data register (orig. 16bits)
+  while (!SPI1_SR_TXE && SPI1->SR){ // TXE event for write access, DMA writes to SPIx_DR register
+    // create 8 bit pointer for data register (orig. 16bits)
+    volatile char *DR2ptr =  (volatile char*)&(SPI1->DR); 
     *DR2ptr = send;
   }
 
-   while (SPI_SR_RXNE){ //RXNE event triggered when data stored in RXFIFO, DMA reads PIx_DR register
-      return DR;
-    }
-   return (SPI)
+  while !(SPI_SR_RXNE && SPI1->SR){ //RXNE event triggered when data stored in RXFIFO, DMA reads PIx_DR register
+      // //read 01h (Temp LSB)
+      // temp1 = 01h;
+      // //read 02h (Temp MSB)
+      // temp2 = 01h;
+      // return (temp1+temp2);
+  }
+  return *DR2ptr; // read 
+  
 }
 
