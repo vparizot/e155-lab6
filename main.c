@@ -86,17 +86,17 @@ int main(void) {
   // TODO: Add SPI initialization code
   // 1. write proper GPIO registers: configure GPIO for MOSI, MISO, CLK
   //MISO = PA6, MOSI = PA12, CLK = PA5 (see datasheet pg. 263)
-  pinMode(PA8, GPIO_ALT); // chip select as PA12 (PA11 sucks)
+  pinMode(PA8, GPIO_ALT); // chip select as PA8` (PA11 sucks)
   pinMode(PA6, GPIO_ALT);  // MISO
   pinMode(PA12, GPIO_ALT); // MOSI
   pinMode(PA5, GPIO_ALT); // CLK
 
   // set to proper alternate function
   GPIOA->AFR[0] |= (0b0101 << GPIO_AFRL_AFSEL5_Pos); // PA5 set to AF5 to be SPI1_SCK
-  GPIOA->AFR[1] |= (0b0101 << GPIO_AFRL_AFSEL12_Pos); // PA12 set to AF5 to be SPI1_MOSI
+  GPIOA->AFR[1] |= (0b0101 << GPIO_AFRH_AFSEL12_Pos); // PA12 set to AF5 to be SPI1_MOSI
   GPIOA->AFR[0] |= (0b0101 << GPIO_AFRL_AFSEL6_Pos); // PA6 set to to AF5 be SPI1_MISO 
 
-
+  RCC->APB2ENR |= RCC_APB2ENR_SPI1EN; // enable SPI
   initSPI(br, cpol, cpha); // call SPI initialization
 
   

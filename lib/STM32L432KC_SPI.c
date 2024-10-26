@@ -20,7 +20,7 @@ void initSPI(int br, int cpol, int cpha){
 // frf to motorola
 // not using crc
 
-RCC->APB2ENR |= RCC_APB2ENR_SPIEN; // enable SPI
+
 
 // 2. write to SPI_CR1 register
 // 2a. config serial clk baud rate w/ BR[2:0] bits
@@ -50,7 +50,7 @@ SPI1->CR1 |= _VAL2FLD(SPI_CR1_MSTR, 0b1);
 // 3. Write to SPI_CR2 register:
 // 3a. Configure the DS[3:0] bits to select the data length for the transfer.
 SPI1->CR2 |= _VAL2FLD(SPI_CR2_DS, 0b1);
-SPI1->CR2 |= (0b0111 << SPI_CR2_DS_Pos)
+SPI1->CR2 |= (0b0111 << SPI_CR2_DS_Pos);
 
 
 
@@ -66,7 +66,7 @@ SPI1->CR2 |= _VAL2FLD(SPI_CR2_FRF, 0b0); //motorola mode
 // 3e. Configure the FRXTH bit. The RXFIFO threshold must be aligned to the read access size for the SPIx_DR register.
 SPI1->CR2 |= _VAL2FLD(SPI_CR2_FRXTH, 0b1); //equal to 8 bit
 
-SPI1->CR1 |= SPI_CR1_SPE // enable spi
+SPI1->CR1 |= SPI_CR1_SPE; // enable spi
 // set word size to 8
 
 // 3f. Initialize LDMA_TX and LDMA_RX bits if DMA is used in packed mode.
@@ -84,20 +84,17 @@ SPI1->CR1 |= SPI_CR1_SPE // enable spi
  *    -- return: the character received over SPI */
 char spiSendReceive(char send){
   // DMA requeste when TXE or RNXE enable bits in the SPIx_CR2 register is set (pg 1317)
-  while (!SPI1_SR_TXE && SPI1->SR){ // TXE event for write access, DMA writes to SPIx_DR register
+  while (!(SPI_SR_TXE & SPI1->SR)){ // TXE event for write access, DMA writes to SPIx_DR register
     // create 8 bit pointer for data register (orig. 16bits)
-    volatile char *DR2ptr =  (volatile char*)&(SPI1->DR); 
-    *DR2ptr = send;
+  }
+  volatile uint8_t* drptr =  (volatile uint8_t*)&SPI1->DR; 
+  *drptr = send;
+  
+
+  while (!(SPI_SR_RXNE & SPI1->SR)){ //RXNE event triggered when data stored in RXFIFO, DMA reads PIx_DR register
   }
 
-  while !(SPI_SR_RXNE && SPI1->SR){ //RXNE event triggered when data stored in RXFIFO, DMA reads PIx_DR register
-      // //read 01h (Temp LSB)
-      // temp1 = 01h;
-      // //read 02h (Temp MSB)
-      // temp2 = 01h;
-      // return (temp1+temp2);
-  }
-  return *DR2ptr; // read 
+  return drptr; 
   
 }
 
