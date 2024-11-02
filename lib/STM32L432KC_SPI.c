@@ -24,50 +24,60 @@ void initSPI(int br, int cpol, int cpha){
 
 // 2. write to SPI_CR1 register
 // 2a. config serial clk baud rate w/ BR[2:0] bits
-SPI1->CR1 |= _VAL2FLD(SPI_CR1_BR, br);
+SPI1->CR1 |= _VAL2FLD(SPI_CR1_BR, 0b111);
 
 // 2b. config CPOL & CPHA bits to define one of the four relationships between data transfer and serial clk
-SPI1->CR1 |= _VAL2FLD(SPI_CR1_CPOL, cpol);
-SPI1->CR1 |= _VAL2FLD(SPI_CR1_CPHA, cpha);
+SPI1->CR1 |= _VAL2FLD(SPI_CR1_CPOL, 0b0);
+SPI1->CR1 |= _VAL2FLD(SPI_CR1_CPHA, 0b1);
 
-// 2c. Select simplex or half-duplex mode by configuring RXONLY or BIDIMODE and BIDIOE (RXONLY and BIDIMODE can't be set at the same time).
-//SPI1->CR1 |= _VAL2FLD(RXONLY, 0); // 0 is transmit & recieve
-
-// 2d. Configure the LSBFIRST bit to define the frame format (Note: 2)
-SPI1->CR1 |= _VAL2FLD(SPI_CR1_LSBFIRST, 0b0); // data transmitted & recieved with MSB
-
-// 2e. Configure the CRCL and CRCEN bits if CRC is needed (while SCK clock signal is at idle state).
-// NO NEED FOR CRC
-SPI1->CR1 |= _VAL2FLD(SPI_CR1_CRCEN, 0b0);
+// 2g. Configure the MSTR bit (in multimaster NSS configuration, avoid conflict state on NSS if master is configured to prevent MODF error).
+SPI1->CR1 |= _VAL2FLD(SPI_CR1_MSTR, 0b1);  // other syntax:  |= SPI_CR1_MSTR
 
 // 2f. Configure SSM and SSI (Notes: 2 & 3).
 SPI1->CR1 |= _VAL2FLD(SPI_CR1_SSM, 0b1); //enabled (we r the software)
 //SPI1->CR1 |= _VAL2FLD(SPI_CR1_SSI, 0b1);
 
-// 2g. Configure the MSTR bit (in multimaster NSS configuration, avoid conflict state on NSS if master is configured to prevent MODF error).
-SPI1->CR1 |= _VAL2FLD(SPI_CR1_MSTR, 0b1);  
 
 // 3. Write to SPI_CR2 register:
 // 3a. Configure the DS[3:0] bits to select the data length for the transfer.
-SPI1->CR2 |= _VAL2FLD(SPI_CR2_DS, 0b1);
-SPI1->CR2 |= (0b0111 << SPI_CR2_DS_Pos);
+SPI1->CR2 |= _VAL2FLD(SPI_CR2_DS, 0b0111); //0111: 8-bit
+//SPI1->CR2 |= (0b0111 << SPI_CR2_DS_Pos);
 
+
+
+// 3e. Configure the FRXTH bit. The RXFIFO threshold must be aligned to the read access size for the SPIx_DR register.
+SPI1->CR2 |= _VAL2FLD(SPI_CR2_FRXTH, 0b1); //equal to 8 bit
 
 
 // 3b. Configure SSOE (Notes: 1 & 2 & 3).
 SPI1->CR2 |= _VAL2FLD(SPI_CR2_SSOE, 0b1);
 
+
+
+SPI1->CR1 |= SPI_CR1_SPE; // enable spi
+
+
+// set word size to 8
+
+
+// 2c. Select simplex or half-duplex mode by configuring RXONLY or BIDIMODE and BIDIOE (RXONLY and BIDIMODE can't be set at the same time).
+//SPI1->CR1 |= _VAL2FLD(RXONLY, 0); // 0 is transmit & recieve
+
+// 2d. Configure the LSBFIRST bit to define the frame format (Note: 2)
+//SPI1->CR1 |= _VAL2FLD(SPI_CR1_LSBFIRST, 0b0); // data transmitted & recieved with MSB
+
+// 2e. Configure the CRCL and CRCEN bits if CRC is needed (while SCK clock signal is at idle state).
+// NO NEED FOR CRC
+//SPI1->CR1 |= _VAL2FLD(SPI_CR1_CRCEN, 0b0);
+
+
+
 // 3c. Set the FRF bit if the TI protocol is required (keep NSSP bit cleared in TI mode).
-SPI1->CR2 |= _VAL2FLD(SPI_CR2_FRF, 0b0); //motorola mode
+//SPI1->CR2 |= _VAL2FLD(SPI_CR2_FRF, 0b0); //motorola mode
 
 // 3d. Set the NSSP bit if the NSS pulse mode between two data units is required (keep CHPA and TI bits cleared in NSSP mode).
 // NO NEED FOR PULE MODE
 
-// 3e. Configure the FRXTH bit. The RXFIFO threshold must be aligned to the read access size for the SPIx_DR register.
-SPI1->CR2 |= _VAL2FLD(SPI_CR2_FRXTH, 0b1); //equal to 8 bit
-
-SPI1->CR1 |= SPI_CR1_SPE; // enable spi
-// set word size to 8
 
 // 3f. Initialize LDMA_TX and LDMA_RX bits if DMA is used in packed mode.
 // 0 is even, 1 is odd
@@ -87,9 +97,9 @@ char spiSendReceive(char send){
   while (!(SPI_SR_TXE & SPI1->SR)){ // TXE event for write access, DMA writes to SPIx_DR register
     // create 8 bit pointer for data register (orig. 16bits)
   }
+
   volatile uint8_t* drptr =  (volatile uint8_t*)&SPI1->DR; 
   *drptr = send;
-  
 
   while (!(SPI_SR_RXNE & SPI1->SR)){ //RXNE event triggered when data stored in RXFIFO, DMA reads PIx_DR register
   }

@@ -25,7 +25,7 @@ char* ledStr = "<p>LED Control:</p><form action=\"ledon\"><input type=\"submit\"
 char* webpageEnd   = "</body></html>";
 
 // TODO: whats a good baud rate?
-int br = 0b010;  // 200000
+int br = 0b111;  // 010 - 200000
 int cpol = 0;
 int cpha = 1;
 char templsb;
@@ -86,7 +86,7 @@ int main(void) {
   // TODO: Add SPI initialization code
   // 1. write proper GPIO registers: configure GPIO for MOSI, MISO, CLK
   //MISO = PA6, MOSI = PA12, CLK = PA5 (see datasheet pg. 263)
-  pinMode(PA8, GPIO_ALT); // chip select as PA8` (PA11 sucks)
+  pinMode(PA8, GPIO_ALT); // chip select as PA8` (PA11 sucks) TODO: MAKE TO OUTPUT
   pinMode(PA6, GPIO_ALT);  // MISO
   pinMode(PA12, GPIO_ALT); // MOSI
   pinMode(PA5, GPIO_ALT); // CLK
