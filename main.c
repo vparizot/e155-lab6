@@ -101,6 +101,7 @@ int main(void) {
   gpioEnable(GPIO_PORT_C);
 
   pinMode(PB3, GPIO_OUTPUT); // LED pin
+  pinMode(PA8, GPIO_OUTPUT); // chip select as PA8` (PA11 sucks) TODO: MAKE TO OUTPUT
   
   RCC->APB2ENR |= (RCC_APB2ENR_TIM15EN);
   initTIM(TIM15);
@@ -110,7 +111,7 @@ int main(void) {
   // TODO: Add SPI initialization code
   // 1. write proper GPIO registers: configure GPIO for MOSI, MISO, CLK
   //MISO = PA6, MOSI = PA12, CLK = PA5 (see datasheet pg. 263)
-  pinMode(PA8, GPIO_OUTPUT); // chip select as PA8` (PA11 sucks) TODO: MAKE TO OUTPUT
+  
   pinMode(PA6, GPIO_ALT);  // MISO
   pinMode(PA12, GPIO_ALT); // MOSI
   pinMode(PA5, GPIO_ALT); // CLK
@@ -151,6 +152,7 @@ int main(void) {
     
     // send config bits [1,1,1,1shot, r1, r2, r3, SD] to 80h
     spiSendReceive(0x80); 
+
     // TODO: will have to change to make adjustable
     spiSendReceive(0b11100000); //res); // 1shot = 0 for cont. temp readings, r1,2,3 = 000 sets 8-bit resolution, SD = 0
    
@@ -180,8 +182,6 @@ int main(void) {
 
     printf("resol: %d \n", res);
     printf("msb: %d \n", tempmsb); // sign bit
-    int signbit = tempmsb & (1<<7)
-    printf("msb sign bit: %d \n", signbit;
     printf("lsb: %d \n", templsb);
 
 
@@ -199,15 +199,16 @@ int main(void) {
     //if (templsb << 3) temperature += 1;
    
     float temperature = tempmsb & 0b01111111;
-    
-    //add precisions:
+    printf("temperaturemsb: %f \n", temperature);
+
+    // add precisions:
     if(1 << 7 & templsb) temperature += 0.5;
     if(1 << 6 & templsb) temperature += 0.25;
     if(1 << 5 & templsb) temperature += 0.125;
     if(1 << 4 & templsb) temperature += 0.0625; 
     
-    
-    printf("temp: %d \n", temp);
+
+    //printf("temp: %d \n", temp);
     printf("temperature: %f \n", temperature);
 
 
