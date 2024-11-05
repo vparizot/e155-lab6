@@ -5,7 +5,7 @@
 // TODO: <SHORT DESCRIPTION OF WHAT THIS FILE DOES>
 
 #include "STM32L432KC_SPI.h"
-
+#include "STM32L432KC_RCC.h"
 /* Enables the SPI peripheral and intializes its clock speed (baud rate), polarity, and phase.
  *    -- br: (0b000 - 0b111). The SPI clk will be the master clock / 2^(BR+1).
  *    -- cpol: clock polarity (0: inactive state is logical 0, 1: inactive state is logical 1).
@@ -21,6 +21,7 @@ void initSPI(int br, int cpol, int cpha){
 // not using crc
 
 
+RCC->APB2ENR |= (RCC_APB2ENR_SPI1EN); // enable SPI
 
 // 2. write to SPI_CR1 register
 // 2a. config serial clk baud rate w/ BR[2:0] bits

@@ -11,6 +11,7 @@ Date: 9/14/19
 #include <stdio.h>
 #include "main.h"
 
+#include "stm32l432xx.h"
 /////////////////////////////////////////////////////////////////
 // Provided Constants and Functions
 /////////////////////////////////////////////////////////////////
@@ -25,7 +26,7 @@ char* ledStr = "<p>LED Control:</p><form action=\"ledon\"><input type=\"submit\"
 char* webpageEnd   = "</body></html>";
 
 // TODO: whats a good baud rate?
-int br = 0b111;  // 010 - 200000
+int br = 200000;  // 010 - 200000
 int cpol = 0;
 int cpha = 1;
 char templsb;
@@ -86,7 +87,7 @@ int main(void) {
   // TODO: Add SPI initialization code
   // 1. write proper GPIO registers: configure GPIO for MOSI, MISO, CLK
   //MISO = PA6, MOSI = PA12, CLK = PA5 (see datasheet pg. 263)
-  pinMode(PA8, GPIO_ALT); // chip select as PA8` (PA11 sucks) TODO: MAKE TO OUTPUT
+  pinMode(PA8, GPIO_OUTPUT); // chip select as PA8` (PA11 sucks) TODO: MAKE TO OUTPUT
   pinMode(PA6, GPIO_ALT);  // MISO
   pinMode(PA12, GPIO_ALT); // MOSI
   pinMode(PA5, GPIO_ALT); // CLK
@@ -96,11 +97,12 @@ int main(void) {
   GPIOA->AFR[1] |= (0b0101 << GPIO_AFRH_AFSEL12_Pos); // PA12 set to AF5 to be SPI1_MOSI
   GPIOA->AFR[0] |= (0b0101 << GPIO_AFRL_AFSEL6_Pos); // PA6 set to to AF5 be SPI1_MISO 
 
-  RCC->APB2ENR |= RCC_APB2ENR_SPI1EN; // enable SPI
+  
   initSPI(br, cpol, cpha); // call SPI initialization
 
   
   while(1) {
+     printf("starting");
     /* Wait for ESP8266 to send a request.
     Requests take the form of '/REQ:<tag>\n', with TAG begin <= 10 characters.
     Therefore the request[] array must be able to contain 18 characters.
@@ -120,49 +122,48 @@ int main(void) {
     ///////////////////////////////////////////
     //// SPI CODE
     ///////////////////////////////////////////
-   
-
+    
     digitalWrite(PA8, PIO_HIGH); //turn on Chip Enable
-
+    
     // send config bits [1,1,1,1shot, r1, r2, r3, SD] to 80h
     spiSendReceive(0x80); 
     // TODO: will have to change to make adjustable
     spiSendReceive(0b11100000); // 1shot = 0 for cont. temp readings, r1,2,3 = 000 sets 8-bit resolution, SD = 0
-
+   
     // toggle chip enable
-    //digitalWrite(PA8, PIO_LOW);
-    //digitalWrite(PA8, PIO_HIGH);
+    digitalWrite(PA8, PIO_LOW);
+    digitalWrite(PA8, PIO_HIGH);
 
     // interface with the temp sensor for lsb
     spiSendReceive(0x01); // Send addr to read temp LSB
     templsb = spiSendReceive(0x00); // recieve temp LSB
 
     // toggle chip enable
-    //digitalWrite(PA8, PIO_LOW);
-    //digitalWrite(PA8, PIO_HIGH);
+    digitalWrite(PA8, PIO_LOW);
+    digitalWrite(PA8, PIO_HIGH);
 
     // interface with the temp sensor for msb
     spiSendReceive(0x02); //sen addr to read temp MSB
     tempmsb = spiSendReceive(0x00); // recieve temp MSB
 
     // toggle chip enable
-    //digitalWrite(PA8, PIO_LOW);
+    digitalWrite(PA8, PIO_LOW);
     //digitalWrite(PA8, PIO_HIGH);
 
 
-    digitalWrite(PA8, PIO_LOW); // turn off chip enable
+    //digitalWrite(PA8, PIO_LOW); // turn off chip enable
     delay_millis(TIM15, 100); // delay before next read
 
 
-    printf("msb: %d [rev/s]\n", tempmsb);
-    printf("lsb: %d [rev/s]\n", templsb);
+    printf("msb: %d \n", tempmsb);
+    printf("lsb: %d \n", templsb);
 
 
     //decode temperature w/ lsb and msb
-    uint16_t temp = (tempmsb << 8) | templsb; //combine temperatures together
-    float temperature = temp * 0.0625; // convert to float, based on data sheet
+   // uint16_t temp = (tempmsb << 8) | templsb; //combine temperatures together
+    //float temperature = temp * 0.0625; // convert to float, based on data sheet
 
-    printf("lsb: %f [rev/s]\n", temperature);
+    //printf("lsb: %f [rev/s]\n", temperature);
 
 
 

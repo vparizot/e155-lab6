@@ -14,4 +14,5 @@ Output/Debug/Obj/Executable_1/STM32L432KC_SPI.o: \
  C:/Users/vparizot/E155/lab7_mvp/CMSIS_5/CMSIS/Core/Include/cmsis_compiler.h \
  C:/Users/vparizot/E155/lab7_mvp/CMSIS_5/CMSIS/Core/Include/cmsis_gcc.h \
  C:/Users/vparizot/E155/lab7_mvp/CMSIS_5/CMSIS/Core/Include/mpu_armv7.h \
- C:/Users/vparizot/E155/lab7_mvp/STM32L4xx/Device/Include/system_stm32l4xx.h
+ C:/Users/vparizot/E155/lab7_mvp/STM32L4xx/Device/Include/system_stm32l4xx.h \
+ C:\Users\vparizot\E155\lab7_mvp\lib\STM32L432KC_RCC.h
