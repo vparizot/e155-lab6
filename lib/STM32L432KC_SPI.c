@@ -25,11 +25,15 @@ RCC->APB2ENR |= (RCC_APB2ENR_SPI1EN); // enable SPI
 
 // 2. write to SPI_CR1 register
 // 2a. config serial clk baud rate w/ BR[2:0] bits
-SPI1->CR1 |= _VAL2FLD(SPI_CR1_BR, 0b111);
+SPI1->CR1 |= _VAL2FLD(SPI_CR1_BR, 0b110); // Used to be 0b111
 
 // 2b. config CPOL & CPHA bits to define one of the four relationships between data transfer and serial clk
-SPI1->CR1 |= _VAL2FLD(SPI_CR1_CPOL, 0b0);
-SPI1->CR1 |= _VAL2FLD(SPI_CR1_CPHA, 0b1);
+SPI1->CR1 |= _VAL2FLD(SPI_CR1_CPOL, cpol);
+SPI1->CR1 |= _VAL2FLD(SPI_CR1_CPHA, cpha);
+
+
+
+
 
 // 2g. Configure the MSTR bit (in multimaster NSS configuration, avoid conflict state on NSS if master is configured to prevent MODF error).
 SPI1->CR1 |= _VAL2FLD(SPI_CR1_MSTR, 0b1);  // other syntax:  |= SPI_CR1_MSTR

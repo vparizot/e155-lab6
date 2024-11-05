@@ -177,9 +177,6 @@ int main(void) {
 
     delay_millis(TIM15, 100); // delay before next read
 
-
-
-
     printf("resol: %d \n", res);
     printf("msb: %d \n", tempmsb); // sign bit
     printf("lsb: %d \n", templsb);
