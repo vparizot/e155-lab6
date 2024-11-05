@@ -22,9 +22,9 @@ char* ledStr = "<p>LED Control:</p><form action=\"ledon\"><input type=\"submit\"
 	<form action=\"ledoff\"><input type=\"submit\" value=\"Turn the LED off!\"></form>";
 char* webpageEnd   = "</body></html>";
 
-char* tempfunc = "<p>Select Temperature Resolution:</p>
+char* tempfunc = "<p>Select Temperature Resolution:</p>\
   <form action=\"8bit\"><input type=\"submit\" value=\"8-bit Resolution\"></form>\
-	<form action=\"9bit\"><input type=\"submit\" value=\"9-bit Resolution\"></form>\
+  <form action=\"9bit\"><input type=\"submit\" value=\"9-bit Resolution\"></form>\
   <form action=\"10bit\"><input type=\"submit\" value=\"10-bit Resolution\"></form>\
   <form action=\"11bit\"><input type=\"submit\" value=\"11-bit Resolution\"></form>\
   <form action=\"12bit\"><input type=\"submit\" value=\"12-bit Resolution\"></form>";
@@ -34,9 +34,8 @@ char* tempfunc = "<p>Select Temperature Resolution:</p>
 int br = 200000;  // 010 - 200000
 int cpol = 0;
 int cpha = 1;
-char templsb;
-char tempmsb;
 
+int temp_resolution = 0b11100000;
 
 //determines whether a given character sequence is in a char array request, returning 1 if present, -1 if not present
 int inString(char request[], char des[]) {
@@ -62,7 +61,7 @@ int updateLEDStatus(char request[])
 
 //determines temperatue resolution needed 
 int updateTempResolution(char request[]){
-  int temp_resolution = 0b11100000; // default in 8 bit
+  //int temp_resolution = 0b11100000; // default in 8 bit
 
   if (inString(request, "8bit")== 1) {
 		temp_resolution = 0b11100000;
@@ -124,9 +123,8 @@ int main(void) {
   
   initSPI(br, cpol, cpha); // call SPI initialization
 
-  
   while(1) {
-     printf("starting");
+     printf("starting \n");
     /* Wait for ESP8266 to send a request.
     Requests take the form of '/REQ:<tag>\n', with TAG begin <= 10 characters.
     Therefore the request[] array must be able to contain 18 characters.
@@ -146,6 +144,7 @@ int main(void) {
     ///////////////////////////////////////////
     //// SPI CODE
     ///////////////////////////////////////////
+
     int res = updateTempResolution(request);
 
     digitalWrite(PA8, PIO_HIGH); //turn on Chip Enable
@@ -153,7 +152,15 @@ int main(void) {
     // send config bits [1,1,1,1shot, r1, r2, r3, SD] to 80h
     spiSendReceive(0x80); 
     // TODO: will have to change to make adjustable
-    spiSendReceive(res); // 1shot = 0 for cont. temp readings, r1,2,3 = 000 sets 8-bit resolution, SD = 0
+    spiSendReceive(0b11100000); //res); // 1shot = 0 for cont. temp readings, r1,2,3 = 000 sets 8-bit resolution, SD = 0
+   
+    // toggle chip enable
+    digitalWrite(PA8, PIO_LOW);
+    digitalWrite(PA8, PIO_HIGH);
+    
+    // interface with the temp sensor for msb
+    spiSendReceive(0x02); //sen addr to read temp MSB
+    char tempmsb = spiSendReceive(0x00); // recieve temp MSB
    
     // toggle chip enable
     digitalWrite(PA8, PIO_LOW);
@@ -161,33 +168,39 @@ int main(void) {
 
     // interface with the temp sensor for lsb
     spiSendReceive(0x01); // Send addr to read temp LSB
-    templsb = spiSendReceive(0x00); // recieve temp LSB
-
+    int templsb = spiSendReceive(0x00); // recieve temp LSB
+   
     // toggle chip enable
-    digitalWrite(PA8, PIO_LOW);
-    digitalWrite(PA8, PIO_HIGH);
+    digitalWrite(PA8, PIO_LOW);// turn off chip enable
 
-    // interface with the temp sensor for msb
-    spiSendReceive(0x02); //sen addr to read temp MSB
-    tempmsb = spiSendReceive(0x00); // recieve temp MSB
-
-    // toggle chip enable
-    digitalWrite(PA8, PIO_LOW);
-    //digitalWrite(PA8, PIO_HIGH);
-
-
-    //digitalWrite(PA8, PIO_LOW); // turn off chip enable
     delay_millis(TIM15, 100); // delay before next read
 
+
+
+
     printf("resol: %d \n", res);
-    printf("msb: %d \n", tempmsb);
+    printf("msb: %d \n", tempmsb); // sign bit
+    int signbit = tempmsb & (1<<7)
+    printf("msb sign bit: %d \n", signbit;
     printf("lsb: %d \n", templsb);
 
 
-    //decode temperature w/ lsb and msb
-    uint16_t temp = (tempmsb << 8) | templsb; //combine temperatures together
-    float temperature = temp * 0.0625; // convert to float, based on data sheet
+    ////decode temperature w/ lsb and msb
+    //uint16_t temp = (tempmsb << 4) | templsb; //combine temperatures together
+    
+    
+    //float temperature = temp * 0.0625; // convert to float, based on data sheet
 
+    //if (templsb << 8) temperature += 1;
+    //if (templsb << 7) temperature += 1;
+    //if (templsb << 6) temperature += 1;
+    //if (templsb << 5) temperature += 1;
+    //if (templsb << 4) temperature += 1;
+    //if (templsb << 3) temperature += 1;
+
+
+
+    printf("temp: %d \n", temp);
     printf("temperature: %f \n", temperature);
 
 
@@ -207,8 +220,8 @@ int main(void) {
 
 
     char temperatureStr[20];
-    char units[20];
-    sprintf(temperatureStr, "%f ", temp);
+    //char units[20];
+    sprintf(temperatureStr, "%f ", temperature);
     //sprintf(units,"degrees Celsius");
 
 
@@ -222,11 +235,14 @@ int main(void) {
     sendString(USART, ledStatusStr);
     sendString(USART, "</p>");
   
-    sendString(USART, "<h2>Resolution</h2>");
+    sendString(USART, "<h2>Temperature Resoultion control </h2>");
 
-    // sendString(USART, "<p>");
-    // sendString(USART, ledStatusStr);
-    // sendString(USART, "</p>");
+    sendString(USART, tempfunc);
+
+    sendString(USART, "<h2>Temperature:</h2>");
+    sendString(USART, "</p>");
+    sendString(USART, temperatureStr);
+    sendString(USART, "</p>");
 
 
 
