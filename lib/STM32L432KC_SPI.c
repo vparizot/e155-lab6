@@ -19,8 +19,6 @@ void initSPI(int br, int cpol, int cpha){
 // set packets to 8 bits
 // frf to motorola
 // not using crc
-
-
 RCC->APB2ENR |= (RCC_APB2ENR_SPI1EN); // enable SPI
 
 // 2. write to SPI_CR1 register
@@ -31,31 +29,33 @@ SPI1->CR1 |= _VAL2FLD(SPI_CR1_BR, 0b110); // Used to be 0b111
 SPI1->CR1 |= _VAL2FLD(SPI_CR1_CPOL, cpol);
 SPI1->CR1 |= _VAL2FLD(SPI_CR1_CPHA, cpha);
 
-
-
+SPI1->CR1 |= _VAL2FLD(SPI_CR1_LSBFIRST, 0b0); // data transmitted & recieved with MSB
+SPI1->CR1 |= _VAL2FLD(SPI_CR1_CRCEN, 0b0);
+SPI1->CR1 |= _VAL2FLD(SPI_CR1_SSM, 0b1);
+SPI1->CR1 |= _VAL2FLD(SPI_CR1_SSI, 0b1);
 
 
 // 2g. Configure the MSTR bit (in multimaster NSS configuration, avoid conflict state on NSS if master is configured to prevent MODF error).
 SPI1->CR1 |= _VAL2FLD(SPI_CR1_MSTR, 0b1);  // other syntax:  |= SPI_CR1_MSTR
 
 // 2f. Configure SSM and SSI (Notes: 2 & 3).
-SPI1->CR1 |= _VAL2FLD(SPI_CR1_SSM, 0b1); //enabled (we r the software)
+//SPI1->CR1 |= _VAL2FLD(SPI_CR1_SSM, 0b1); //enabled (we r the software)
 //SPI1->CR1 |= _VAL2FLD(SPI_CR1_SSI, 0b1);
 
 
 // 3. Write to SPI_CR2 register:
 // 3a. Configure the DS[3:0] bits to select the data length for the transfer.
-SPI1->CR2 |= _VAL2FLD(SPI_CR2_DS, 0b0111); //0111: 8-bit
-//SPI1->CR2 |= (0b0111 << SPI_CR2_DS_Pos);
+//SPI1->CR2 |= _VAL2FLD(SPI_CR2_DS, 0b0111); //0111: 8-bit
+SPI1->CR2 |= (0b0111 << SPI_CR2_DS_Pos);
 
-
-
+SPI1->CR2 |= _VAL2FLD(SPI_CR2_SSOE, 0b1);
+SPI1->CR2 |= _VAL2FLD(SPI_CR2_FRF, 0b0);
 // 3e. Configure the FRXTH bit. The RXFIFO threshold must be aligned to the read access size for the SPIx_DR register.
 SPI1->CR2 |= _VAL2FLD(SPI_CR2_FRXTH, 0b1); //equal to 8 bit
 
 
 // 3b. Configure SSOE (Notes: 1 & 2 & 3).
-SPI1->CR2 |= _VAL2FLD(SPI_CR2_SSOE, 0b1);
+
 
 
 

@@ -154,7 +154,7 @@ int main(void) {
     spiSendReceive(0x80); 
 
     // TODO: will have to change to make adjustable
-    spiSendReceive(0b11100000); //res); // 1shot = 0 for cont. temp readings, r1,2,3 = 000 sets 8-bit resolution, SD = 0
+    spiSendReceive(res); // 1shot = 0 for cont. temp readings, r1,2,3 = 000 sets 8-bit resolution, SD = 0
    
     // toggle chip enable
     digitalWrite(PA8, PIO_LOW);
@@ -175,38 +175,38 @@ int main(void) {
     // toggle chip enable
     digitalWrite(PA8, PIO_LOW);// turn off chip enable
 
-    delay_millis(TIM15, 100); // delay before next read
+    delay_millis(TIM15, 120); // delay before next read
 
-    printf("resol: %d \n", res);
-    printf("msb: %d \n", tempmsb); // sign bit
-    printf("lsb: %d \n", templsb);
+    //printf("resol: %d \n", res);
+    //printf("msb: %d \n", tempmsb); // sign bit
+    //printf("lsb: %d \n", templsb);
 
 
-    ////decode temperature w/ lsb and msb
-    //uint16_t temp = (tempmsb << 4) | templsb; //combine temperatures together
-    
-    
-    //float temperature = temp * 0.0625; // convert to float, based on data sheet
+    //float temperature = tempmsb & 0b01111111;
+   // printf("temperaturemsb: %f \n", temperature);
 
-    //if (templsb << 8) temperature += 1;
-    //if (templsb << 7) temperature += 1;
-    //if (templsb << 6) temperature += 1;
-    //if (templsb << 5) temperature += 1;
-    //if (templsb << 4) temperature += 1;
-    //if (templsb << 3) temperature += 1;
-   
-    float temperature = tempmsb & 0b01111111;
-    printf("temperaturemsb: %f \n", temperature);
+    // create mask for sign bit
+    float temperature;// 
+    int sign = (tempmsb & 0b10000000); //~(0b1<<7)); //0b10000000);
 
-    // add precisions:
-    if(1 << 7 & templsb) temperature += 0.5;
-    if(1 << 6 & templsb) temperature += 0.25;
-    if(1 << 5 & templsb) temperature += 0.125;
-    if(1 << 4 & templsb) temperature += 0.0625; 
-    
+    if (!sign){ // positive
+      temperature = tempmsb & 0b01111111;
+      // add precisions:
+      if(1 << 7 & templsb) temperature += 0.5;
+      if(1 << 6 & templsb) temperature += 0.25;
+      if(1 << 5 & templsb) temperature += 0.125;
+      if(1 << 4 & templsb) temperature += 0.0625; 
+    } else { // negative
+      temperature = -128 + (tempmsb & 0b01111111); // -(~tempmsb+1);
+      if(1 << 7 & templsb) temperature -= 0.5;
+      if(1 << 6 & templsb) temperature -= 0.25;
+      if(1 << 5 & templsb) temperature -= 0.125;
+      if(1 << 4 & templsb) temperature -= 0.0625; 
+
+    }
 
     //printf("temp: %d \n", temp);
-    printf("temperature: %f \n", temperature);
+    //printf("temperature: %f \n", temperature);
 
 
 
@@ -244,11 +244,10 @@ int main(void) {
     sendString(USART, "<h2>Temperature:</h2>");
     sendString(USART, "</p>");
     sendString(USART, temperatureStr);
+    sendString(USART, "<p>Degrees Celcius</p>");
     sendString(USART, "</p>");
 
     sendString(USART, webpageEnd);
-
-
 
   }
 }
