@@ -197,12 +197,18 @@ int main(void) {
     //if (templsb << 5) temperature += 1;
     //if (templsb << 4) temperature += 1;
     //if (templsb << 3) temperature += 1;
-
-
-
+   
+    float temperature = tempmsb & 0b01111111;
+    
+    //add precisions:
+    if(1 << 7 & templsb) temperature += 0.5;
+    if(1 << 6 & templsb) temperature += 0.25;
+    if(1 << 5 & templsb) temperature += 0.125;
+    if(1 << 4 & templsb) temperature += 0.0625; 
+    
+    
     printf("temp: %d \n", temp);
     printf("temperature: %f \n", temperature);
-
 
 
 
@@ -220,9 +226,7 @@ int main(void) {
 
 
     char temperatureStr[20];
-    //char units[20];
     sprintf(temperatureStr, "%f ", temperature);
-    //sprintf(units,"degrees Celsius");
 
 
     // finally, transmit the webpage over UART
@@ -243,8 +247,6 @@ int main(void) {
     sendString(USART, "</p>");
     sendString(USART, temperatureStr);
     sendString(USART, "</p>");
-
-
 
     sendString(USART, webpageEnd);
 
