@@ -10,11 +10,8 @@ Date: 9/14/19
 #include <stdlib.h>
 #include <stdio.h>
 #include "main.h"
-
 #include "stm32l432xx.h"
-/////////////////////////////////////////////////////////////////
-// Provided Constants and Functions
-/////////////////////////////////////////////////////////////////
+
 
 //Defining the web page in two chunks: everything before the current time, and everything after the current time
 char* webpageStart = "<!DOCTYPE html><html><head><title>E155 Web Server Demo Webpage</title>\
@@ -25,7 +22,15 @@ char* ledStr = "<p>LED Control:</p><form action=\"ledon\"><input type=\"submit\"
 	<form action=\"ledoff\"><input type=\"submit\" value=\"Turn the LED off!\"></form>";
 char* webpageEnd   = "</body></html>";
 
-// TODO: whats a good baud rate?
+char* tempfunc = "<p>Select Temperature Resolution:</p>
+  <form action=\"8bit\"><input type=\"submit\" value=\"8-bit Resolution\"></form>\
+	<form action=\"9bit\"><input type=\"submit\" value=\"9-bit Resolution\"></form>\
+  <form action=\"10bit\"><input type=\"submit\" value=\"10-bit Resolution\"></form>\
+  <form action=\"11bit\"><input type=\"submit\" value=\"11-bit Resolution\"></form>\
+  <form action=\"12bit\"><input type=\"submit\" value=\"12-bit Resolution\"></form>";
+
+
+// Set global variables
 int br = 200000;  // 010 - 200000
 int cpol = 0;
 int cpha = 1;
@@ -53,6 +58,25 @@ int updateLEDStatus(char request[])
 	}
 
 	return led_status;
+}
+
+//determines temperatue resolution needed 
+int updateTempResolution(char request[]){
+  int temp_resolution = 0b11100000; // default in 8 bit
+
+  if (inString(request, "8bit")== 1) {
+		temp_resolution = 0b11100000;
+	} else if (inString(request, "9bit")== 1) {
+		temp_resolution = 0b11100010;
+	} else if (inString(request, "10bit")== 1) {
+		temp_resolution = 0b11100100;
+	} else if (inString(request, "11bit")== 1) {
+		temp_resolution = 0b11100110;
+	} else if (inString(request, "12bit")== 1) {
+		temp_resolution = 0b11101000;
+	}
+
+	return temp_resolution;
 }
 
 // Function used by printf to send characters to the laptop
@@ -122,13 +146,14 @@ int main(void) {
     ///////////////////////////////////////////
     //// SPI CODE
     ///////////////////////////////////////////
-    
+    int res = updateTempResolution(request);
+
     digitalWrite(PA8, PIO_HIGH); //turn on Chip Enable
     
     // send config bits [1,1,1,1shot, r1, r2, r3, SD] to 80h
     spiSendReceive(0x80); 
     // TODO: will have to change to make adjustable
-    spiSendReceive(0b11100000); // 1shot = 0 for cont. temp readings, r1,2,3 = 000 sets 8-bit resolution, SD = 0
+    spiSendReceive(res); // 1shot = 0 for cont. temp readings, r1,2,3 = 000 sets 8-bit resolution, SD = 0
    
     // toggle chip enable
     digitalWrite(PA8, PIO_LOW);
@@ -154,16 +179,16 @@ int main(void) {
     //digitalWrite(PA8, PIO_LOW); // turn off chip enable
     delay_millis(TIM15, 100); // delay before next read
 
-
+    printf("resol: %d \n", res);
     printf("msb: %d \n", tempmsb);
     printf("lsb: %d \n", templsb);
 
 
     //decode temperature w/ lsb and msb
-   // uint16_t temp = (tempmsb << 8) | templsb; //combine temperatures together
-    //float temperature = temp * 0.0625; // convert to float, based on data sheet
+    uint16_t temp = (tempmsb << 8) | templsb; //combine temperatures together
+    float temperature = temp * 0.0625; // convert to float, based on data sheet
 
-    //printf("lsb: %f [rev/s]\n", temperature);
+    printf("temperature: %f \n", temperature);
 
 
 
@@ -180,6 +205,13 @@ int main(void) {
     else if (led_status == 0)
       sprintf(ledStatusStr,"LED is off!");
 
+
+    char temperatureStr[20];
+    char units[20];
+    sprintf(temperatureStr, "%f ", temp);
+    //sprintf(units,"degrees Celsius");
+
+
     // finally, transmit the webpage over UART
     sendString(USART, webpageStart); // webpage header code
     sendString(USART, ledStr); // button for controlling LED
@@ -190,6 +222,17 @@ int main(void) {
     sendString(USART, ledStatusStr);
     sendString(USART, "</p>");
   
+    sendString(USART, "<h2>Resolution</h2>");
+
+    // sendString(USART, "<p>");
+    // sendString(USART, ledStatusStr);
+    // sendString(USART, "</p>");
+
+
+
     sendString(USART, webpageEnd);
+
+
+
   }
 }

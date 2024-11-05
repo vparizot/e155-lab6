@@ -105,7 +105,6 @@ char spiSendReceive(char send){
   while (!(SPI_SR_RXNE & SPI1->SR)){ //RXNE event triggered when data stored in RXFIFO, DMA reads PIx_DR register
   }
 
-  return drptr; 
+  return *drptr; 
   
 }
-
