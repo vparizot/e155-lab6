@@ -1,8 +1,10 @@
 /*
-File: Lab_6_JHB.c
-Author: Josh Brake
-Email: jbrake@hmc.edu
-Date: 9/14/19
+File: main.c
+Author: Victoria Parizot
+Email: vparizot@hmc.edu
+Date: 11/5/2024
+
+Based on the started code for 2024 E155 Lab 6
 */
 
 
@@ -31,7 +33,7 @@ char* tempfunc = "<p>Select Temperature Resolution:</p>\
 
 
 // Set global variables
-int br = 200000;  // 010 - 200000
+int br = 200000;  
 int cpol = 0;
 int cpha = 1;
 
@@ -42,6 +44,7 @@ int inString(char request[], char des[]) {
 	if (strstr(request, des) != NULL) {return 1;}
 	return -1;
 }
+
 
 int updateLEDStatus(char request[])
 {
@@ -59,7 +62,7 @@ int updateLEDStatus(char request[])
 	return led_status;
 }
 
-//determines temperatue resolution needed 
+// determines configuration bits based on user selected temperatue resolution 
 int updateTempResolution(char request[]){
   //int temp_resolution = 0b11100000; // default in 8 bit
 
@@ -148,27 +151,24 @@ int main(void) {
 
     int res = updateTempResolution(request);
 
-    digitalWrite(PA8, PIO_HIGH); //turn on Chip Enable
+    digitalWrite(PA8, PIO_HIGH); // turn on Chip Enable
     
-    // send config bits [1,1,1,1shot, r1, r2, r3, SD] to 80h
-    spiSendReceive(0x80); 
-
-    // TODO: will have to change to make adjustable
-    spiSendReceive(res); // 1shot = 0 for cont. temp readings, r1,2,3 = 000 sets 8-bit resolution, SD = 0
+    spiSendReceive(0x80); // send write address of 80h for config bits
+    spiSendReceive(res); // Send config bits based on user selected resolution
    
     // toggle chip enable
     digitalWrite(PA8, PIO_LOW);
     digitalWrite(PA8, PIO_HIGH);
     
-    // interface with the temp sensor for msb
-    spiSendReceive(0x02); //sen addr to read temp MSB
+    // Read MSB of temperature 
+    spiSendReceive(0x02); //send addr to read temp MSB
     char tempmsb = spiSendReceive(0x00); // recieve temp MSB
    
     // toggle chip enable
     digitalWrite(PA8, PIO_LOW);
     digitalWrite(PA8, PIO_HIGH);
 
-    // interface with the temp sensor for lsb
+    // Read LSB of temperature 
     spiSendReceive(0x01); // Send addr to read temp LSB
     int templsb = spiSendReceive(0x00); // recieve temp LSB
    
@@ -183,7 +183,7 @@ int main(void) {
 
 
     //float temperature = tempmsb & 0b01111111;
-   // printf("temperaturemsb: %f \n", temperature);
+    // printf("temperaturemsb: %f \n", temperature);
 
     // create mask for sign bit
     float temperature;// 
